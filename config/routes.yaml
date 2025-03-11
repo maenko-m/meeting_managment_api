@@ -1,0 +1,13 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+
+api_login_check:
+    path: /api/login_check
+
+api_doc:
+    path: /api/doc
+    controller: nelmio_api_doc.controller.swagger_ui
+    methods: GET

@@ -1,0 +1,53 @@
+nelmio_api_doc:
+  documentation:
+    components:
+      securitySchemes:
+        JwtAuth:
+          type: apiKey
+          in: header
+          name: jwt
+          description: "JWT токен для аутентификации"
+    security:
+      - BearerAuth: [ ]
+    info:
+      title: 'Meeting Management API'
+      description: 'Документация к API управление совещаниями'
+      version: '1.0'
+    paths:
+      /api/login_check:
+        post:
+          tags:
+            - Authentication
+          summary: "JWT Авторизация"
+          description: "Выдает JWT токен при наличии пользователя с указанными данными"
+          requestBody:
+            required: true
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      example: "user@example.com"
+                    password:
+                      type: string
+                      example: "mypassword"
+          responses:
+            "200":
+              description: "Успешный вход"
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+            "401":
+              description: "Ошибка авторизации"
+  areas:
+    default:
+      path_patterns:
+        - ^/api
+
