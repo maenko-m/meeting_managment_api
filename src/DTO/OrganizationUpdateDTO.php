@@ -3,6 +3,7 @@
 namespace App\DTO;
 
 use App\Enum\Status;
+use Nelmio\ApiDocBundle\Attribute\Ignore;
 use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class OrganizationUpdateDTO
@@ -16,6 +17,7 @@ readonly class OrganizationUpdateDTO
         public ?string $status = null,
     ) {}
 
+    #[Ignore]
     public function getStatusEnum(): ?Status
     {
         return Status::tryFrom($this->status);

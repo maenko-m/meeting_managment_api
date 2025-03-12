@@ -27,10 +27,10 @@ class EventRepository extends ServiceEntityRepository
         }
 
         if ($type) {
-            if ($type === 'author') {
+            if ($type === 'организатор') {
                 $qb->andWhere('e.author = :user')
                     ->setParameter('user', $user);
-            } elseif ($type === 'participant') {
+            } elseif ($type === 'участник') {
                 $qb->andWhere(':user MEMBER OF e.employees')
                     ->setParameter('user', $user);
             }
@@ -41,16 +41,24 @@ class EventRepository extends ServiceEntityRepository
                 ->setParameter('name', '%'.$name.'%');
         }
 
-        if ($descOrder !== null) {
-            if ($descOrder) {
-                $qb->orderBy('e.name', 'DESC');
-            } else {
-                $qb->orderBy('e.name', 'ASC');
-            }
+        if ($descOrder) {
+            $qb->orderBy('e.date', 'DESC');
+        } else {
+            $qb->orderBy('e.date', 'ASC');
         }
 
         $qb->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function getAllByDate(\DateTimeInterface $date): array
+    {
+        $qb = $this->createQueryBuilder('e');
+
+        $qb->andWhere('e.date = :date')
+            ->setParameter('date', $date);
 
         return $qb->getQuery()->getResult();
     }

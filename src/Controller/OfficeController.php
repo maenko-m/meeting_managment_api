@@ -74,7 +74,7 @@ final class OfficeController extends AbstractController
 
 
     #[OA\Tag(name: 'Offices')]
-    #[OA\Get(description: 'Обновляет данные офиса полученного по id. Этот маршрут требует прав модератора', summary: 'Получить офис по id')]
+    #[OA\Get(description: 'Возвращает офис. Этот маршрут требует авторизации', summary: 'Получить офис по id')]
     #[OA\Parameter(
         name: 'id',
         description: 'Id офиса',
@@ -126,7 +126,7 @@ final class OfficeController extends AbstractController
     }
 
     #[OA\Tag(name: 'Offices')]
-    #[OA\Post(description: 'Добавляет новый офис. Этот маршрут требует авторизации', summary: 'Создать офис')]
+    #[OA\Post(description: 'Добавляет новый офис. Этот маршрут требует прав модератора', summary: 'Создать офис')]
     #[OA\RequestBody(
         description: 'Данные для создания нового офиса',
         content: new OA\JsonContent(
@@ -194,7 +194,7 @@ final class OfficeController extends AbstractController
     }
 
     #[OA\Tag(name: 'Offices')]
-    #[OA\Patch(description: 'Обновляет данные офиса полученного по id. Этот маршрут требует прав модератор', summary: 'Изменить офис')]
+    #[OA\Patch(description: 'Обновляет данные офиса полученного по id. Этот маршрут требует прав модератора', summary: 'Изменить офис')]
     #[OA\Parameter(
         name: 'id',
         description: 'Id офиса',
@@ -270,7 +270,7 @@ final class OfficeController extends AbstractController
 
 
     #[OA\Tag(name: 'Offices')]
-    #[OA\Delete(description: 'Удаляет офис полученный по id. Этот маршрут требует прав модератор', summary: 'Удалить офис')]
+    #[OA\Delete(description: 'Удаляет офис полученный по id. Этот маршрут требует прав модератора', summary: 'Удалить офис')]
     #[OA\Parameter(
         name: 'id',
         description: 'Id офиса',

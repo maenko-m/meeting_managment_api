@@ -37,6 +37,11 @@ class EventService implements EventServiceInterface
         return $this->eventRepository->getAllByFilter($room_id, $type, $name, $user, $descOrder, $page, $limit);
     }
 
+    public function getAllEventsByDate(DateTime $date): array
+    {
+        return $this->eventRepository->getAllByDate($date);
+    }
+
     public function getEventById(int $eventId): ?Event
     {
         return $this->em->getRepository(Event::class)->find($eventId);

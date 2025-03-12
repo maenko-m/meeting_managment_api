@@ -75,7 +75,7 @@ final class OrganizationController extends AbstractController
     #[OA\Get(description: 'Возвращает организацию. Этот маршрут требует авторизации', summary: 'Получить организацию по id')]
     #[OA\Parameter(
         name: 'id',
-        description: 'Id сотрудника',
+        description: 'Id организации',
         in: 'path',
         required: true,
         schema: new OA\Schema(type: 'integer')

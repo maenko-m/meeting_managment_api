@@ -41,8 +41,8 @@ class MeetingRoomRepository extends ServiceEntityRepository
         }
 
         if ($canAccess) {
-            $qb->leftJoin('mr.employee', 'e')
-                ->andWhere('e.id = :userId')
+            $qb->leftJoin('mr.employees', 'e')
+                ->andWhere('e.id = :userId OR mr.is_public = true')
                 ->setParameter('userId', $user->getId());
         }
 

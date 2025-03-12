@@ -144,7 +144,7 @@ final class EmployeeController extends AbstractController
         )
     )]
     #[OA\Response(
-        response: 200,
+        response: 201,
         description: 'Сотрудник успешно создан',
         content: new OA\JsonContent(
             properties: [
@@ -171,7 +171,6 @@ final class EmployeeController extends AbstractController
             ]
         )
     )]
-    #[Security(name: "JwtAuth")]
     #[Route('/register', name: 'api_employee_register', methods: ['POST'], format: 'json')]
     public function register(#[MapRequestPayload] EmployeeCreateDTO $employeeCreateDTO): JsonResponse
     {
@@ -231,6 +230,15 @@ final class EmployeeController extends AbstractController
     #[OA\Response(
         response: 403,
         description: 'Недостаточно прав',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'error', description: 'Описание ошибки', type: 'string', default: 'error message'),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Неавторизованный доступ',
         content: new OA\JsonContent(
             properties: [
                 new OA\Property(property: 'error', description: 'Описание ошибки', type: 'string', default: 'error message'),
@@ -305,6 +313,15 @@ final class EmployeeController extends AbstractController
     #[OA\Response(
         response: 403,
         description: 'Недостаточно прав',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'error', description: 'Описание ошибки', type: 'string', default: 'error message'),
+            ]
+        )
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Неавторизованный доступ',
         content: new OA\JsonContent(
             properties: [
                 new OA\Property(property: 'error', description: 'Описание ошибки', type: 'string', default: 'error message'),
