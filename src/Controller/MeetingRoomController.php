@@ -119,6 +119,7 @@ final class MeetingRoomController extends AbstractController
                 'employees',
                 'photoPath',
                 'events',
+                'meetingRooms'
             ]
         ]);
     }

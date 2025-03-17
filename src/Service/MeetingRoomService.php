@@ -10,6 +10,8 @@ use App\Entity\Office;
 use App\Interface\MeetingRoomServiceInterface;
 use App\Repository\MeetingRoomRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -17,12 +19,13 @@ class MeetingRoomService implements MeetingRoomServiceInterface
 {
     private EntityManagerInterface $em;
     private MeetingRoomRepository $meetingRoomRepository;
+    private string $uploadDir;
 
-
-    public function __construct(EntityManagerInterface $em, MeetingRoomRepository $meetingRoomRepository)
+    public function __construct(EntityManagerInterface $em, MeetingRoomRepository $meetingRoomRepository, ParameterBagInterface $params)
     {
         $this->em = $em;
         $this->meetingRoomRepository = $meetingRoomRepository;
+        $this->uploadDir = $params->get('meeting_room_photos_directory');
     }
 
     public function getAllMeetingRooms(array $filters, ?UserInterface $user): array
@@ -50,11 +53,21 @@ class MeetingRoomService implements MeetingRoomServiceInterface
             throw new NotFoundHttpException('Office not found');
         }
 
+        $photoPaths = [];
+
+        foreach ($dto->photos as $photo) {
+            if ($photo instanceof UploadedFile) {
+                $newFilename = uniqid('photo_').'.'.$photo->guessExtension();
+                $photo->move($this->uploadDir, $newFilename);
+                $photoPaths[] = '/uploads/meeting_rooms/' . $newFilename;
+            }
+        }
+
         $meetingRoom = (new MeetingRoom())
             ->setName($dto->name)
             ->setDescription($dto->description)
             ->setCalendarCode($dto->calendarCode)
-            ->setPhotoPath($dto->photoPath)
+            ->setPhotoPath($photoPaths)
             ->setSize($dto->size)
             ->setStatus($dto->getStatusEnum())
             ->setOffice($office)
@@ -95,10 +108,6 @@ class MeetingRoomService implements MeetingRoomServiceInterface
             $meetingRoom->setCalendarCode($dto->calendarCode);
         }
 
-        if ($dto->photoPath) {
-            $meetingRoom->setPhotoPath($dto->photoPath);
-        }
-
         if ($dto->size) {
             $meetingRoom->setSize($dto->size);
         }
@@ -128,6 +137,21 @@ class MeetingRoomService implements MeetingRoomServiceInterface
                 }
                 $meetingRoom->addEmployee($employee);
             }
+        }
+
+        if ($dto->photos) {
+            $meetingRoom->clearPhotoPaths();
+
+            $photoPaths = [];
+
+            foreach ($dto->photos as $photo) {
+                if ($photo instanceof UploadedFile) {
+                    $newFilename = uniqid('photo_').'.'.$photo->guessExtension();
+                    $photo->move($this->uploadDir, $newFilename);
+                    $photoPaths[] = '/uploads/meeting_rooms/' . $newFilename;
+                }
+            }
+            $meetingRoom->setPhotoPaths($photoPaths);
         }
 
         $this->em->flush();

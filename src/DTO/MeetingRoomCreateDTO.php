@@ -22,8 +22,13 @@ readonly class MeetingRoomCreateDTO
         #[Assert\Type('int')]
         public ?int $calendarCode,
 
-        #[Assert\NotBlank]
-        public ?string $photoPath,
+        #[Assert\All([
+            new Assert\File(
+                maxSize: '5M',
+                mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
+            )
+        ])]
+        public array $photos = [],
 
         #[Assert\NotBlank]
         #[Assert\Type('int')]

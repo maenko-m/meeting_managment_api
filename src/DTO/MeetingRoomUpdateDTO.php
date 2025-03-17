@@ -19,7 +19,13 @@ readonly class MeetingRoomUpdateDTO
         #[Assert\Type('int')]
         public ?int $calendarCode = null,
 
-        public ?string $photoPath = null,
+        #[Assert\All([
+            new Assert\File(
+                maxSize: '5M',
+                mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
+            )
+        ])]
+        public array $photos = [],
 
         #[Assert\Type('int')]
         #[Assert\Range(notInRangeMessage: "Uncorrected size", min: 1, max: 100)]

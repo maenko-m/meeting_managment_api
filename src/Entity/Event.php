@@ -35,12 +35,12 @@ class Event
     private ?\DateTimeInterface $time_end = null;
 
     #[ORM\ManyToOne(targetEntity: Employee::class)]
-    #[ORM\JoinColumn(name: 'employee_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'employee_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private ?Employee $author = null;
 
     #[Ignore]
     #[ORM\ManyToOne(targetEntity: MeetingRoom::class, inversedBy: 'events')]
-    #[ORM\JoinColumn(name: 'meeting_room_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'meeting_room_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private ?MeetingRoom $meeting_room = null;
 
     #[ORM\ManyToMany(targetEntity: Employee::class, inversedBy: 'events')]

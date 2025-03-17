@@ -7,10 +7,12 @@ use App\DTO\EventUpdateDTO;
 use App\Entity\Event;
 use App\Entity\Employee;
 use App\Entity\MeetingRoom;
+use App\Enum\Status;
 use App\Interface\EventServiceInterface;
 use App\Repository\EventRepository;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
@@ -54,6 +56,10 @@ class EventService implements EventServiceInterface
 
         if (!$meetingRoom) {
             throw new NotFoundHttpException('Meeting room not found');
+        }
+
+        if ($meetingRoom->getStatus() !== Status::ACTIVE) {
+            throw new BadRequestHttpException('Meeting room is not active');
         }
 
         if (!$author) {

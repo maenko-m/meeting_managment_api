@@ -14,11 +14,9 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class MeetingRoomRepository extends ServiceEntityRepository
 {
-    private MeetingRoomAccessChecker $meetingRoomAccessChecker;
-    public function __construct(ManagerRegistry $registry, MeetingRoomAccessChecker $meetingRoomAccessChecker)
+    public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, MeetingRoom::class);
-        $this->meetingRoomAccessChecker = $meetingRoomAccessChecker;
     }
 
     public function getAllByFilter(?string $name = null, ?int $office_id = null, bool $isActive = false, bool $canAccess = false, ?Employee $user = null, int $page = 1, int $limit = 10): array
@@ -52,7 +50,7 @@ class MeetingRoomRepository extends ServiceEntityRepository
         $data = $qb->getQuery()->getResult();
 
         foreach ($data as $room) {
-            $room->setAccess($this->meetingRoomAccessChecker->canAccess($room, $user));
+            $room->setAccess(MeetingRoomAccessChecker::canAccess($room, $user));
         }
 
         return $data;
@@ -66,7 +64,7 @@ class MeetingRoomRepository extends ServiceEntityRepository
             return null;
         }
 
-        $room->setAccess($this->meetingRoomAccessChecker->canAccess($room, $user));
+        $room->setAccess(MeetingRoomAccessChecker::canAccess($room, $user));
 
         return $room;
     }

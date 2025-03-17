@@ -29,8 +29,8 @@ class MeetingRoom
     private ?int $calendar_code = null;
 
     #[Ignore]
-    #[ORM\Column(length: 512)]
-    private ?string $photo_path = null;
+    #[ORM\Column(type: Types::JSON)]
+    private array $photo_path = [];
 
     #[ORM\Column(type: Types::SMALLINT)]
     private ?int $size = null;
@@ -39,7 +39,7 @@ class MeetingRoom
     private ?Status $status = null;
 
     #[ORM\ManyToOne(targetEntity: Office::class)]
-    #[ORM\JoinColumn(name: 'office_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'office_id', referencedColumnName: 'id', nullable: false, onDelete: 'CASCADE')]
     private ?Office $office = null;
 
     #[Ignore]
@@ -101,7 +101,7 @@ class MeetingRoom
 
     public function addEmployee(Employee $employee): static
     {
-        if (!$this->is_public && !$this->employees->contains($employee)) {
+        if (!$this->is_public && !$this->employees->contains($employee) && $this->employees->count() < $this->size) {
             $this->employees->add($employee);
         }
 
@@ -165,14 +165,38 @@ class MeetingRoom
         return $this;
     }
 
-    public function getPhotoPath(): ?string
+    public function getPhotoPath(): ?array
     {
         return $this->photo_path;
     }
 
-    public function setPhotoPath(string $photo_path): static
+    public function setPhotoPath(array $photo_paths): static
     {
-        $this->photo_path = $photo_path;
+        $this->photo_path = $photo_paths;
+
+        return $this;
+    }
+
+    public function addPhotoPath(string $photoPath): self
+    {
+        if (!in_array($photoPath, $this->photo_path, true)) {
+            $this->photo_path[] = $photoPath;
+        }
+        return $this;
+    }
+
+    public function removePhotoPath(string $photoPath): self
+    {
+        $this->photo_path = array_values(array_filter(
+            $this->photo_path,
+            fn($path) => $path !== $photoPath
+        ));
+        return $this;
+    }
+
+    public function clearPhotoPaths(): static
+    {
+        $this->photo_path = [];
 
         return $this;
     }

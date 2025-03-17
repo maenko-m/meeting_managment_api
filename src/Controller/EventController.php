@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\DTO\EventCreateDTO;
 use App\DTO\EventUpdateDTO;
 use App\Interface\EventServiceInterface;
+use App\Service\EventAccessChecker;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -311,7 +312,7 @@ final class EventController extends AbstractController {
 
 
     #[OA\Tag(name: 'Events')]
-    #[OA\Patch(description: 'Обновляет данные мероприятия полученного по id. Этот маршрут требует прав модератора', summary: 'Изменить мероприятие')]
+    #[OA\Patch(description: 'Обновляет данные мероприятия полученного по id. Этот маршрут требует прав модератора при обращении к чужим мероприятиям', summary: 'Изменить мероприятие')]
     #[OA\Parameter(
         name: 'id',
         description: 'Id мероприятия',
@@ -364,9 +365,14 @@ final class EventController extends AbstractController {
     )]
     #[Security(name: "JwtAuth")]
     #[Route('/{id}', name: 'app_event_edit', methods: ['PATCH'], format: 'json')]
-    #[IsGranted('ROLE_MODERATOR')]
     public function edit(int $id, #[MapRequestPayload] EventUpdateDTO $eventUpdateDTO): JsonResponse
     {
+        $event = $this->eventService->getEventById($id);
+
+        if (!EventAccessChecker::checkAccess($event, $this->getUser()) && !$this->isGranted('ROLE_MODERATOR')) {
+            return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+        }
+
         $errors = $this->validator->validate($eventUpdateDTO);
         if (count($errors) > 0) {
             return $this->json(['errors' => (string)$errors], Response::HTTP_BAD_REQUEST);
@@ -386,7 +392,7 @@ final class EventController extends AbstractController {
     }
 
     #[OA\Tag(name: 'Events')]
-    #[OA\Delete(description: 'Удаляет мероприятие полученное по id. Этот маршрут требует прав модератора', summary: 'Удалить мероприятие')]
+    #[OA\Delete(description: 'Удаляет мероприятие полученное по id. Этот маршрут требует прав модератора при обращении к чужим мероприятиям', summary: 'Удалить мероприятие')]
     #[OA\Parameter(
         name: 'id',
         description: 'Id мероприятия',
@@ -432,9 +438,14 @@ final class EventController extends AbstractController {
     )]
     #[Security(name: "JwtAuth")]
     #[Route('/{id}', name: 'app_event_delete', methods: ['DELETE'], format: 'json')]
-    #[IsGranted('ROLE_MODERATOR')]
     public function delete(int $id): JsonResponse
     {
+        $event = $this->eventService->getEventById($id);
+
+        if (!EventAccessChecker::checkAccess($event, $this->getUser()) && !$this->isGranted('ROLE_MODERATOR')) {
+            return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+        }
+
         try {
             $this->eventService->deleteEvent($id);
 
