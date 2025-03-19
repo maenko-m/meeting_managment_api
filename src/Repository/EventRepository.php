@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Employee;
 use App\Entity\Event;
+use App\Entity\MeetingRoom;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -59,6 +60,31 @@ class EventRepository extends ServiceEntityRepository
 
         $qb->andWhere('e.date = :date')
             ->setParameter('date', $date);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function getConflictingEvents(
+        MeetingRoom $meetingRoom,
+        \DateTimeInterface $date,
+        \DateTimeInterface $timeStart,
+        \DateTimeInterface $timeEnd,
+        ?int $excludeEventId = null
+    ): array {
+        $qb = $this->createQueryBuilder('e')
+            ->andWhere('e.meeting_room = :meetingRoom')
+            ->andWhere('e.date = :date')
+            ->andWhere('e.time_start < :timeEnd')
+            ->andWhere('e.time_end > :timeStart')
+            ->setParameter('meetingRoom', $meetingRoom)
+            ->setParameter('date', $date)
+            ->setParameter('timeStart', $timeStart)
+            ->setParameter('timeEnd', $timeEnd);
+
+        if ($excludeEventId) {
+            $qb->andWhere('e.id != :excludeId')
+                ->setParameter('excludeId', $excludeEventId);
+        }
 
         return $qb->getQuery()->getResult();
     }

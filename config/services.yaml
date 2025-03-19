@@ -8,15 +8,17 @@ parameters:
 
 services:
 
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: true      # Automatically injects dependencies in your services.
+        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+
     App\EventListener\OrganizationStatusListener:
         arguments:
             $em: '@doctrine.orm.entity_manager'
         tags:
             - { name: doctrine.event_listener, event: preUpdate, entity: App\Entity\Organization }
-    # default configuration for services in *this* file
-    _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -27,6 +29,10 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+    App\Service\YandexCalendarService:
+        arguments:
+            $yandexUsername: '%env(YANDEX_USERNAME)%'
+            $yandexPass: '%env(YANDEX_APP_PASSWORD)%'
 
 
     app.normalizer.object_normalizer:
@@ -41,6 +47,12 @@ services:
                     'timeEnd' : '@App\Serializer\TimeCallback',
                     'status': '@App\Serializer\StatusCallback'
                 }
+
+    App\EventListener\EventSynchronizationListener:
+        tags:
+            - { name: doctrine.event_listener, event: postPersist }
+            - { name: doctrine.event_listener, event: postUpdate }
+            - { name: doctrine.event_listener, event: preRemove }
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

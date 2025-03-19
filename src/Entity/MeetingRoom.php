@@ -18,15 +18,15 @@ class MeetingRoom
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, unique: true)]
     private ?string $name = null;
 
     #[ORM\Column(length: 512)]
     private ?string $description = null;
 
     #[Ignore]
-    #[ORM\Column(type: 'integer')]
-    private ?int $calendar_code = null;
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $calendar_code = null;
 
     #[Ignore]
     #[ORM\Column(type: Types::JSON)]
@@ -124,12 +124,12 @@ class MeetingRoom
         return $this;
     }
 
-    public function getCalendarCode(): int
+    public function getCalendarCode(): string
     {
         return $this->calendar_code;
     }
 
-    public function setCalendarCode(int $calendar_code): static
+    public function setCalendarCode(string $calendar_code): static
     {
         $this->calendar_code = $calendar_code;
 

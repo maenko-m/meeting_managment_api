@@ -18,9 +18,16 @@ class ComposerStaticInit74ab73114a599f4a2997b6a284f9e273
         'ffecb95d45175fd40f75be8a23b34f90' => __DIR__ . '/..' . '/twig/twig/src/Resources/debug.php',
         'c7baa00073ee9c61edf148c51917cfb4' => __DIR__ . '/..' . '/twig/twig/src/Resources/escaper.php',
         'f844ccf1d25df8663951193c3fc307c8' => __DIR__ . '/..' . '/twig/twig/src/Resources/string_loader.php',
+        '383eaff206634a77a1be54e64e6459c7' => __DIR__ . '/..' . '/sabre/uri/lib/functions.php',
         '2203a247e6fda86070a5e4e07aed533a' => __DIR__ . '/..' . '/symfony/clock/Resources/now.php',
         'f598d06aa772fa33d905e87be6398fb1' => __DIR__ . '/..' . '/symfony/polyfill-intl-idn/bootstrap.php',
+        '2b9d0f43f9552984cfa82fee95491826' => __DIR__ . '/..' . '/sabre/event/lib/coroutine.php',
+        'd81bab31d3feb45bfe2f283ea3c8fdf7' => __DIR__ . '/..' . '/sabre/event/lib/Loop/functions.php',
+        'a1cce3d26cc15c00fcd0b3354bd72c88' => __DIR__ . '/..' . '/sabre/event/lib/Promise/functions.php',
+        '3569eecfeed3bcf0bad3c998a494ecb8' => __DIR__ . '/..' . '/sabre/xml/lib/Deserializer/functions.php',
+        '93aa591bc4ca510c520999e34229ee79' => __DIR__ . '/..' . '/sabre/xml/lib/Serializer/functions.php',
         '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
+        'ebdb698ed4152ae445614b69b5e4bb6a' => __DIR__ . '/..' . '/sabre/http/lib/functions.php',
         '6a47392539ca2329373e0d33e1dba053' => __DIR__ . '/..' . '/symfony/polyfill-intl-icu/bootstrap.php',
         'ec07570ca5a812141189b1fa81503674' => __DIR__ . '/..' . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
         '92c8763cd6170fce6fcfe7e26b4e8c10' => __DIR__ . '/..' . '/symfony/phpunit-bridge/bootstrap.php',
@@ -115,6 +122,12 @@ class ComposerStaticInit74ab73114a599f4a2997b6a284f9e273
             'Symfony\\Bridge\\PhpUnit\\' => 23,
             'Symfony\\Bridge\\Monolog\\' => 23,
             'Symfony\\Bridge\\Doctrine\\' => 24,
+            'Sabre\\Xml\\' => 10,
+            'Sabre\\VObject\\' => 14,
+            'Sabre\\Uri\\' => 10,
+            'Sabre\\HTTP\\' => 11,
+            'Sabre\\Event\\' => 12,
+            'Sabre\\' => 6,
         ),
         'P' => 
         array (
@@ -486,6 +499,30 @@ class ComposerStaticInit74ab73114a599f4a2997b6a284f9e273
         'Symfony\\Bridge\\Doctrine\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/doctrine-bridge',
+        ),
+        'Sabre\\Xml\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sabre/xml/lib',
+        ),
+        'Sabre\\VObject\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sabre/vobject/lib',
+        ),
+        'Sabre\\Uri\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sabre/uri/lib',
+        ),
+        'Sabre\\HTTP\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sabre/http/lib',
+        ),
+        'Sabre\\Event\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sabre/event/lib',
+        ),
+        'Sabre\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/sabre/dav/lib',
         ),
         'Psr\\Log\\' => 
         array (

@@ -20,11 +20,13 @@ class EventService implements EventServiceInterface
 {
     private EntityManagerInterface $em;
     private EventRepository $eventRepository;
+    private YandexCalendarService  $yandexCalendarService;
 
-    public function __construct(EntityManagerInterface $em, EventRepository $eventRepository)
+    public function __construct(EntityManagerInterface $em, EventRepository $eventRepository, YandexCalendarService $yandexCalendarService)
     {
         $this->em = $em;
         $this->eventRepository = $eventRepository;
+        $this->yandexCalendarService = $yandexCalendarService;
     }
 
     public function getAllEvents(array $filters, ?UserInterface $user): array
@@ -76,6 +78,10 @@ class EventService implements EventServiceInterface
             ->setMeetingRoom($meetingRoom)
         ;
 
+        if (!$this->validateEvent($event->getMeetingRoom(), $event->getDate(), $event->getTimeStart(), $event->getTimeEnd())) {
+            throw new BadRequestHttpException('Event data uncorrected');
+        }
+
         foreach ($dto->employeeIds as $employeeId) {
             $employee = $this->em->getRepository(Employee::class)->find($employeeId);
             if ($employee) {
@@ -126,7 +132,14 @@ class EventService implements EventServiceInterface
             if (!$meetingRoom) {
                 throw new NotFoundHttpException('Meeting room not found');
             }
+            if ($meetingRoom->getStatus() !== Status::ACTIVE) {
+                throw new BadRequestHttpException('Meeting room is not active');
+            }
             $event->setMeetingRoom($meetingRoom);
+        }
+
+        if (!$this->validateEvent($event->getMeetingRoom(), $event->getDate(), $event->getTimeStart(), $event->getTimeEnd(), $event->getId())) {
+            throw new BadRequestHttpException('Event data uncorrected');
         }
 
         $this->em->flush();
@@ -144,5 +157,20 @@ class EventService implements EventServiceInterface
 
         $this->em->remove($event);
         $this->em->flush();
+    }
+
+    private function validateEvent(MeetingRoom $room, \DateTimeInterface $date, \DateTimeInterface $timeStart, \DateTimeInterface $timeEnd, int $ignoreEventId = null): bool
+    {
+        if ($timeStart >= $timeEnd) {
+            return false;
+        }
+
+        $conflictingEvents = $this->eventRepository->getConflictingEvents($room, $date, $timeStart, $timeEnd, $ignoreEventId);
+
+        if (!empty($conflictingEvents)) {
+            return false;
+        }
+
+        return true;
     }
 }
