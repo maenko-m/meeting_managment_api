@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use App\DTO\EmployeeCreateDTO;
 use App\DTO\EmployeeUpdateDTO;
+use App\Entity\Employee;
 use App\Interface\EmployeeServiceInterface;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use OpenApi\Attributes as OA;
 
@@ -72,6 +74,23 @@ final class EmployeeController extends AbstractController
         $employees = $this->employeeService->getAllEmployees();
 
         return $this->json($employees, Response::HTTP_OK);
+    }
+
+    #[Route('/self', name: 'api_employee_get_self', methods: ['GET'], format: 'json')]
+    public function getSelf(): JsonResponse
+    {
+        $user = $this->getUser();
+        if ($user instanceof Employee) {
+            return $this->json([
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'name' => $user->getName(),
+                'surname' => $user->getSurname(),
+                'patronymic' => $user->getPatronymic(),
+                'roles' => $user->getRoles(),
+            ], Response::HTTP_OK);
+        }
+        return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
     }
 
     #[OA\Tag(name: 'Employees')]

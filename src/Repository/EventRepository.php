@@ -18,7 +18,7 @@ class EventRepository extends ServiceEntityRepository
         parent::__construct($registry, Event::class);
     }
 
-    public function getAllByFilter(?int $room_id = null, ?string $type = null, ?string $name = null, ?Employee $user = null, bool $descOrder = false, int $page = 1, int $limit = 10): array
+    public function getAllByFilter(?int $room_id = null, ?string $type = null, ?string $name = null, ?Employee $user = null, bool $descOrder = false, ?string $isArchive = null, ?string $date = null, ?int $office_id = null, int $page = 1, int $limit = 10): array
     {
         $qb = $this->createQueryBuilder('e');
 
@@ -42,6 +42,28 @@ class EventRepository extends ServiceEntityRepository
                 ->setParameter('name', '%'.$name.'%');
         }
 
+        if ($isArchive) {
+            if ($isArchive === 'true') {
+                $qb->andWhere('e.date < :dateToday');
+            } elseif ($isArchive === 'false') {
+                $qb->andWhere('e.date >= :dateToday');
+            }
+            $qb->setParameter('dateToday', (new \DateTime())->setTime(0, 0, 0));
+        }
+
+        if ($date) {
+            $dateObj = new \DateTime($date);
+            $qb->andWhere('e.date = :date')
+                ->setParameter('date', $dateObj);
+        }
+
+        if ($office_id) {
+            $qb->join('e.meeting_room', 'mr')
+                ->join('mr.office', 'o')
+                ->andWhere('o.id = :officeId')
+                ->setParameter('officeId', $office_id);
+        }
+
         if ($descOrder) {
             $qb->orderBy('e.date', 'DESC');
         } else {
@@ -51,7 +73,23 @@ class EventRepository extends ServiceEntityRepository
         $qb->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
 
-        return $qb->getQuery()->getResult();
+        $data = $qb->getQuery()->getResult();
+
+        $countForAuthor = $this->createQueryBuilder('e')
+            ->select('COUNT(e.id) as total')
+            ->andWhere('e.author = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        $countForMember = $this->createQueryBuilder('e')
+            ->select('COUNT(e.id) as total')
+            ->andWhere(':user MEMBER OF e.employees')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return ["data" => $data, "total" => [$countForAuthor, $countForMember] ];
     }
 
     public function getAllByDate(\DateTimeInterface $date): array

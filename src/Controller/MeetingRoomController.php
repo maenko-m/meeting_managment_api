@@ -116,10 +116,10 @@ final class MeetingRoomController extends AbstractController
             AbstractNormalizer::IGNORED_ATTRIBUTES => [
                 'calendarCode',
                 'description',
-                'employees',
                 'photoPath',
                 'events',
-                'meetingRooms'
+                'meetingRooms',
+                'time_zone'
             ]
         ]);
     }
@@ -181,7 +181,12 @@ final class MeetingRoomController extends AbstractController
             return $this->json(['error' => 'Meeting room not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json($room);
+        return $this->json($room, context: [
+            AbstractNormalizer::IGNORED_ATTRIBUTES => [
+                'meetingRooms',
+                'time_zone'
+            ]
+        ]);
     }
 
 

@@ -12,6 +12,7 @@ use App\Interface\EventServiceInterface;
 use App\Repository\EventRepository;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -20,7 +21,6 @@ class EventService implements EventServiceInterface
 {
     private EntityManagerInterface $em;
     private EventRepository $eventRepository;
-    private YandexCalendarService  $yandexCalendarService;
 
     public function __construct(EntityManagerInterface $em, EventRepository $eventRepository, YandexCalendarService $yandexCalendarService)
     {
@@ -35,10 +35,13 @@ class EventService implements EventServiceInterface
         $room_id = $filters['room_id'] ?? null;
         $type = $filters['type'] ?? null;
         $descOrder = $filters['desc_order'] ?? false;
+        $date = $filters['date'] ?? null;
+        $isArchived = $filters['archived'] ?? null;
+        $office_id = $filters['office_id'] ?? null;
         $page = $filters['page'] ?? 1;
         $limit = $filters['limit'] ?? 10;
 
-        return $this->eventRepository->getAllByFilter($room_id, $type, $name, $user, $descOrder, $page, $limit);
+        return $this->eventRepository->getAllByFilter($room_id, $type, $name, $user, $descOrder, $isArchived, $date, $office_id, $page, $limit);
     }
 
     public function getAllEventsByDate(DateTime $date): array
