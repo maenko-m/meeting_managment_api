@@ -9,7 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Serializer\Attribute\Ignore;
-use OpenApi\Attributes as OA;
+
 #[ORM\Entity(repositoryClass: EmployeeRepository::class)]
 class Employee implements UserInterface, PasswordAuthenticatedUserInterface
 {
@@ -46,12 +46,17 @@ class Employee implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $events;
 
     #[Ignore]
+    #[ORM\OneToMany(targetEntity: PushSubscription::class, mappedBy: 'employee', cascade: ['persist', 'remove'])]
+    private Collection $pushSubscriptions;
+
+    #[Ignore]
     #[ORM\Column(type: "json")]
     private array $roles = [];
 
     public function __construct()
     {
         $this->events = new ArrayCollection();
+        $this->pushSubscriptions = new ArrayCollection();
     }
 
     public function getEvents(): Collection
@@ -159,5 +164,25 @@ class Employee implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserIdentifier(): string
     {
         return $this->email;
+    }
+
+    #[Ignore]
+    public function getPushSubscriptions(): Collection { return $this->pushSubscriptions; }
+    public function addPushSubscription(PushSubscription $subscription): static
+    {
+        if (!$this->pushSubscriptions->contains($subscription)) {
+            $this->pushSubscriptions->add($subscription);
+            $subscription->setEmployee($this);
+        }
+        return $this;
+    }
+    public function removePushSubscription(PushSubscription $subscription): static
+    {
+        if ($this->pushSubscriptions->removeElement($subscription)) {
+            if ($subscription->getEmployee() === $this) {
+                $subscription->setEmployee(null);
+            }
+        }
+        return $this;
     }
 }

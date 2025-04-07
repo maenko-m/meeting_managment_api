@@ -9,24 +9,28 @@ use App\Entity\Employee;
 use App\Entity\MeetingRoom;
 use App\Enum\Status;
 use App\Interface\EventServiceInterface;
+use App\Message\SendNotificationMessage;
 use App\Repository\EventRepository;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DelayStamp;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 class EventService implements EventServiceInterface
 {
     private EntityManagerInterface $em;
     private EventRepository $eventRepository;
+    private MessageBusInterface $bus;
 
-    public function __construct(EntityManagerInterface $em, EventRepository $eventRepository, YandexCalendarService $yandexCalendarService)
+    public function __construct(EntityManagerInterface $em, EventRepository $eventRepository, MessageBusInterface $bus)
     {
         $this->em = $em;
         $this->eventRepository = $eventRepository;
-        $this->yandexCalendarService = $yandexCalendarService;
+        $this->bus = $bus;
     }
 
     public function getAllEvents(array $filters, ?UserInterface $user): array
@@ -94,6 +98,33 @@ class EventService implements EventServiceInterface
 
         $this->em->persist($event);
         $this->em->flush();
+
+        $startTimeUtc = (clone $event->getDate())->setTime(
+            (int)$event->getTimeStart()->format('H'),
+            (int)$event->getTimeStart()->format('i'),
+            (int)$event->getTimeStart()->format('s')
+        );
+        $endTimeUtc = (clone $event->getDate())->setTime(
+            (int)$event->getTimeEnd()->format('H'),
+            (int)$event->getTimeEnd()->format('i'),
+            (int)$event->getTimeEnd()->format('s')
+        );
+
+        $time60MinBefore = (clone $startTimeUtc)->modify('-60 minutes');
+        $time30MinBefore = (clone $startTimeUtc)->modify('-30 minutes');
+        $this->bus->dispatch(
+            new SendNotificationMessage($event->getId(), 'reminder', 60),
+            [new DelayStamp((int)(($time60MinBefore->getTimestamp() - time()) * 1000))]
+        );
+        $this->bus->dispatch(
+            new SendNotificationMessage($event->getId(), 'reminder', 30),
+            [new DelayStamp((int)(($time30MinBefore->getTimestamp() - time()) * 1000))]
+        );
+
+        $this->bus->dispatch(
+            new SendNotificationMessage($event->getId(), 'summary'),
+            [new DelayStamp((int)(($endTimeUtc->getTimestamp() - time()) * 1000))]
+        );
 
         return $event;
     }

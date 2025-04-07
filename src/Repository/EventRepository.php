@@ -126,4 +126,75 @@ class EventRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    public function findEventsStartingInOneHour(\DateTime $nowUtc, int $timeZoneOffset): array
+    {
+        $startTime = clone $nowUtc;
+        $startTime->modify('+60 minutes');
+
+        $startMin = clone $startTime;
+        $startMin->modify('-5 minutes');
+        $startMax = clone $startTime;
+        $startMax->modify('+5 minutes');
+
+        $qb = $this->createQueryBuilder('e')
+            ->join('e.meeting_room', 'mr')
+            ->join('mr.office', 'o')
+            ->where('o.time_zone = :timeZoneOffset')
+            ->andWhere('e.date = :date')
+            ->andWhere('e.time_start BETWEEN :startMin AND :startMax')
+            ->setParameter('timeZoneOffset', $timeZoneOffset)
+            ->setParameter('date', $startTime->format('Y-m-d'))
+            ->setParameter('startMin', $startMin->format('H:i:s'))
+            ->setParameter('startMax', $startMax->format('H:i:s'));
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function findEventsStartingInThirtyMinutes(\DateTime $nowUtc, int $timeZoneOffset): array
+    {
+        $startTime = clone $nowUtc;
+        $startTime->modify('+30 minutes');
+
+        $startMin = clone $startTime;
+        $startMin->modify('-5 minutes');
+        $startMax = clone $startTime;
+        $startMax->modify('+5 minutes');
+
+        $qb = $this->createQueryBuilder('e')
+            ->join('e.meeting_room', 'mr')
+            ->join('mr.office', 'o')
+            ->where('o.time_zone = :timeZoneOffset')
+            ->andWhere('e.date = :date')
+            ->andWhere('e.time_start BETWEEN :startMin AND :startMax')
+            ->setParameter('timeZoneOffset', $timeZoneOffset)
+            ->setParameter('date', $startTime->format('Y-m-d'))
+            ->setParameter('startMin', $startMin->format('H:i:s'))
+            ->setParameter('startMax', $startMax->format('H:i:s'));
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function findEventsJustEnded(\DateTime $nowUtc, int $timeZoneOffset): array
+    {
+        $endTime = clone $nowUtc;
+
+        $endMin = clone $endTime;
+        $endMin->modify('-5 minutes');
+        $endMax = clone $endTime;
+        $endMax->modify('+5 minutes');
+
+        $qb = $this->createQueryBuilder('e')
+            ->join('e.meeting_room', 'mr')
+            ->join('mr.office', 'o')
+            ->where('o.time_zone = :timeZoneOffset')
+            ->andWhere('e.date = :date')
+            ->andWhere('e.time_end BETWEEN :endMin AND :endMax')
+            ->setParameter('timeZoneOffset', $timeZoneOffset)
+            ->setParameter('date', $endTime->format('Y-m-d'))
+            ->setParameter('endMin', $endMin->format('H:i:s'))
+            ->setParameter('endMax', $endMax->format('H:i:s'));
+
+        return $qb->getQuery()->getResult();
+    }
 }
