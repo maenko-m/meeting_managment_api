@@ -7,10 +7,13 @@ use App\DTO\EventUpdateDTO;
 use App\Entity\Event;
 use App\Entity\Employee;
 use App\Entity\MeetingRoom;
+use App\Enum\RecurrenceType;
 use App\Enum\Status;
 use App\Interface\EventServiceInterface;
 use App\Message\SendNotificationMessage;
 use App\Repository\EventRepository;
+use DateInterval;
+use DatePeriod;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,7 +41,7 @@ class EventService implements EventServiceInterface
         $name = $filters['name'] ?? null;
         $room_id = $filters['room_id'] ?? null;
         $type = $filters['type'] ?? null;
-        $descOrder = $filters['desc_order'] ?? false;
+        $descOrder = filter_var($filters['desc_order'] ?? false, FILTER_VALIDATE_BOOLEAN);
         $date = $filters['date'] ?? null;
         $isArchived = $filters['archived'] ?? null;
         $office_id = $filters['office_id'] ?? null;
@@ -97,8 +100,51 @@ class EventService implements EventServiceInterface
         }
 
         $this->em->persist($event);
+
+        //повторы
+        if ($dto->recurrenceType && $dto->recurrenceInterval && $dto->recurrenceEnd) {
+            $recurrenceType = RecurrenceType::from($dto->recurrenceType);
+            $intervalCode = match ($recurrenceType) {
+                RecurrenceType::DAY => 'P' . $dto->recurrenceInterval . 'D',
+                RecurrenceType::WEEK => 'P' . $dto->recurrenceInterval . 'W',
+                RecurrenceType::MONTH => 'P' . $dto->recurrenceInterval . 'M',
+                RecurrenceType::YEAR => 'P' . $dto->recurrenceInterval . 'Y',
+            };
+
+            $period = new DatePeriod(
+                $event->getDate(),
+                new DateInterval($intervalCode),
+                new \DateTime($dto->recurrenceEnd)
+            );
+
+            foreach ($period as $date) {
+                if ($date == $event->getDate()) continue; //пропустить оригинал
+
+                $recurringEvent = (new Event())
+                    ->setName($event->getName())
+                    ->setDescription($event->getDescription())
+                    ->setDate($date)
+                    ->setTimeStart(clone $event->getTimeStart())
+                    ->setTimeEnd(clone $event->getTimeEnd())
+                    ->setAuthor($event->getAuthor())
+                    ->setMeetingRoom($event->getMeetingRoom())
+                    ->setParentEvent($event)
+                    ->setRecurrenceType($recurrenceType)
+                    ->setRecurrenceInterval($dto->recurrenceInterval)
+                    ->setRecurrenceEnd(new \DateTime($dto->recurrenceEnd));
+
+                foreach ($event->getEmployees() as $employee) {
+                    $recurringEvent->addEmployee($employee);
+                }
+
+                $this->em->persist($recurringEvent);
+            }
+
+        }
+
         $this->em->flush();
 
+        //уведомления
         $startTimeUtc = (clone $event->getDate())->setTime(
             (int)$event->getTimeStart()->format('H'),
             (int)$event->getTimeStart()->format('i'),

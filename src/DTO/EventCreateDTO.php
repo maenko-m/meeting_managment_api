@@ -2,6 +2,8 @@
 
 namespace App\DTO;
 
+use App\Enum\RecurrenceType;
+use Symfony\Component\Serializer\Attribute\Ignore;
 use Symfony\Component\Validator\Constraints as Assert;
 
 readonly class EventCreateDTO
@@ -39,6 +41,21 @@ readonly class EventCreateDTO
         #[Assert\All([
             new Assert\Type('int')
         ])]
-        public array   $employeeIds = []
+        public array   $employeeIds = [],
+
+        #[Assert\Choice(callback: [RecurrenceType::class, 'getValidValues'], message: 'Invalid recurrence type')]
+        public ?string $recurrenceType = null,
+
+        #[Assert\Type('int')]
+        public ?int $recurrenceInterval = null,
+
+        #[Assert\Date]
+        public ?string $recurrenceEnd = null,
     ) {}
+
+    #[Ignore]
+    public function getRecurrenceTypeEnum(): ?RecurrenceType
+    {
+        return RecurrenceType::tryFrom($this->recurrenceType);
+    }
 }

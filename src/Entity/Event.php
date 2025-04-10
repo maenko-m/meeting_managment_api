@@ -8,6 +8,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Ignore;
+use App\Enum\RecurrenceType;
 
 #[ORM\Entity(repositoryClass: EventRepository::class)]
 class Event
@@ -46,11 +47,72 @@ class Event
     #[ORM\ManyToMany(targetEntity: Employee::class, inversedBy: 'events')]
     private Collection $employees;
 
+
+    #[ORM\Column(nullable: true, enumType: RecurrenceType::class)]
+    private ?RecurrenceType $recurrenceType = null;
+
+
+    #[ORM\Column(nullable: true)]
+    private ?int $recurrenceInterval = null;
+
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $recurrenceEnd = null;
+
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    private ?Event $parentEvent = null;
+
     public function __construct()
     {
         $this->employees = new ArrayCollection();
     }
 
+    public function getRecurrenceType(): ?RecurrenceType
+    {
+        return $this->recurrenceType;
+    }
+
+    public function setRecurrenceType(?RecurrenceType $recurrenceType): static
+    {
+        $this->recurrenceType = $recurrenceType;
+
+        return $this;
+    }
+
+    public function getRecurrenceInterval(): ?int
+    {
+        return $this->recurrenceInterval;
+    }
+
+    public function setRecurrenceInterval(?int $recurrenceInterval): static
+    {
+        $this->recurrenceInterval = $recurrenceInterval;
+
+        return $this;
+    }
+
+    public function getRecurrenceEnd(): ?\DateTimeInterface
+    {
+        return $this->recurrenceEnd;
+    }
+
+    public function setRecurrenceEnd(?\DateTimeInterface $recurrenceEnd): static
+    {
+        $this->recurrenceEnd = $recurrenceEnd;
+
+        return $this;
+    }
+
+    public function getParentEvent(): ?Event
+    {
+        return $this->parentEvent;
+    }
+
+    public function setParentEvent(?Event $parentEvent): static
+    {
+        $this->parentEvent = $parentEvent;
+
+        return $this;
+    }
     public function getEmployees(): Collection
     {
         return $this->employees;
