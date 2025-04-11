@@ -44,11 +44,12 @@ class EventRepository extends ServiceEntityRepository
 
         if ($isArchive) {
             if ($isArchive === 'true') {
-                $qb->andWhere('e.date < :dateToday');
+                $qb->andWhere('e.date < :dateToday')
+                    ->setParameter('dateToday', (new \DateTime())->setTime(0, 0, 0));;
             } elseif ($isArchive === 'false') {
-                $qb->andWhere('e.date >= :dateToday');
+                $qb->andWhere('e.date >= :dateToday')
+                    ->setParameter('dateToday', (new \DateTime())->setTime(0, 0, 0));;
             }
-            $qb->setParameter('dateToday', (new \DateTime())->setTime(0, 0, 0));
         }
 
         if ($date) {
@@ -75,21 +76,53 @@ class EventRepository extends ServiceEntityRepository
 
         $data = $qb->getQuery()->getResult();
 
-        $countForAuthor = $this->createQueryBuilder('e')
-            ->select('COUNT(e.id) as total')
-            ->andWhere('e.author = :user')
-            ->setParameter('user', $user)
+        $countQb = clone $qb;
+        $total = $countQb->select('COUNT(e.id) as total')
+            ->resetDQLPart('orderBy')
+            ->setFirstResult(null)
+            ->setMaxResults(null)
             ->getQuery()
             ->getSingleScalarResult();
 
-        $countForMember = $this->createQueryBuilder('e')
-            ->select('COUNT(e.id) as total')
-            ->andWhere(':user MEMBER OF e.employees')
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getSingleScalarResult();
 
-        return ["data" => $data, "total" => [$countForAuthor, $countForMember] ];
+        $countForAuthor = 0;
+        $countForMember = 0;
+
+        if ($user) {
+            $countAuthorQb = clone $qb;
+            $countForAuthor = $countAuthorQb->select('COUNT(e.id) as total')
+                ->andWhere('e.author = :user')
+                ->setParameter('user', $user)
+                ->resetDQLPart('orderBy')
+                ->setFirstResult(null)
+                ->setMaxResults(null)
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            $countMemberQb = clone $qb;
+            $countForMember = $countMemberQb->select('COUNT(e.id) as total')
+                ->andWhere(':user MEMBER OF e.employees')
+                ->setParameter('user', $user)
+                ->resetDQLPart('orderBy')
+                ->setFirstResult(null)
+                ->setMaxResults(null)
+                ->getQuery()
+                ->getSingleScalarResult();
+        }
+
+        return [
+            'data' => $data,
+            'meta' => [
+                'total' => (int) $total,
+                'page' => $page,
+                'limit' => $limit,
+                'totalPages' => (int) ceil($total / $limit)
+            ],
+            'counts' => [
+                'author' => (int) $countForAuthor,
+                'member' => (int) $countForMember
+            ]
+        ];
     }
 
     public function getAllByDate(\DateTimeInterface $date): array

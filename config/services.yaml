@@ -43,6 +43,7 @@ services:
                 circular_reference_handler: '@App\Serializer\CircularReferenceHandler'
                 callbacks: {
                     'date' : '@App\Serializer\DateCallback',
+                    'recurrenceEnd': '@App\Serializer\DateCallback',
                     'timeStart': '@App\Serializer\TimeCallback',
                     'timeEnd' : '@App\Serializer\TimeCallback',
                     'status': '@App\Serializer\StatusCallback'

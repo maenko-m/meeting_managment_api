@@ -53,7 +53,22 @@ class MeetingRoomRepository extends ServiceEntityRepository
             $room->setAccess(MeetingRoomAccessChecker::canAccess($room, $user));
         }
 
-        return ['data' => $data, 'total' => [$this->count()]];
+        $countQb = clone $qb;
+        $total = $countQb->select('COUNT(mr.id) as total')
+            ->setFirstResult(null)
+            ->setMaxResults(null)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return [
+            'data' => $data,
+            'meta' => [
+                'total' => (int) $total,
+                'page' => $page,
+                'limit' => $limit,
+                'totalPages' => (int) ceil($total / $limit)
+            ]
+        ];
     }
 
     public function findWithAccess(int $meetingRoomId, ?Employee $user = null): ?MeetingRoom

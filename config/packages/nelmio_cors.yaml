@@ -8,7 +8,7 @@ nelmio_cors:
         max_age: 3600
     paths:
         '^/api/':
-            allow_origin: [ 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8000', 'http://127.0.0.1:8000']
+            allow_origin: [ 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8000', 'http://127.0.0.1:8000, http://192.168.0.18:3000', 'http://192.168.0.18:8000']
             allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
             allow_headers: ['Content-Type', 'jwt']
             max_age: 3600
