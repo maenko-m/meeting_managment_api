@@ -9,6 +9,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Ignore;
 use App\Enum\RecurrenceType;
+use Symfony\Component\Serializer\Annotation\SerializedName;
 
 #[ORM\Entity(repositoryClass: EventRepository::class)]
 class Event
@@ -48,7 +49,7 @@ class Event
     private Collection $employees;
 
 
-    #[ORM\Column(nullable: true, enumType: RecurrenceType::class)]
+    #[ORM\Column(type: 'string', nullable: true, enumType: RecurrenceType::class)]
     private ?RecurrenceType $recurrenceType = null;
 
 
@@ -66,9 +67,15 @@ class Event
         $this->employees = new ArrayCollection();
     }
 
+    #[Ignore]
     public function getRecurrenceType(): ?RecurrenceType
     {
         return $this->recurrenceType;
+    }
+
+    public function getRecurrenceTypeValue(): ?string
+    {
+        return $this->recurrenceType?->value;
     }
 
     public function setRecurrenceType(?RecurrenceType $recurrenceType): static

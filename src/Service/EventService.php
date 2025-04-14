@@ -111,6 +111,11 @@ class EventService implements EventServiceInterface
                 RecurrenceType::YEAR => 'P' . $dto->recurrenceInterval . 'Y',
             };
 
+            $event
+                ->setRecurrenceType($recurrenceType)
+                ->setRecurrenceInterval($dto->recurrenceInterval)
+                ->setRecurrenceEnd(new \DateTime($dto->recurrenceEnd));
+
             $period = new DatePeriod(
                 $event->getDate(),
                 new DateInterval($intervalCode),
