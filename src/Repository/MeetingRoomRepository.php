@@ -23,6 +23,11 @@ class MeetingRoomRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('mr');
 
+        $qb->leftJoin('mr.office', 'o');
+
+        $qb->andWhere('o.organization = :organizationId')
+            ->setParameter('organizationId', $user->getOrganization()->getId());
+
         if ($office_id) {
             $qb->andWhere('mr.office = :office')
                 ->setParameter('office', $office_id);
@@ -33,25 +38,17 @@ class MeetingRoomRepository extends ServiceEntityRepository
                 ->setParameter('name', '%'.$name.'%');
         }
 
-        if ($isActive) {
-            $qb->andWhere('mr.status = :status')
-                ->setParameter('status', Status::ACTIVE);
-        }
+        $qb->andWhere('mr.status = :status')
+            ->setParameter('status', Status::ACTIVE);
 
-        if ($canAccess) {
-            $qb->leftJoin('mr.employees', 'e')
-                ->andWhere('e.id = :userId OR mr.is_public = true')
-                ->setParameter('userId', $user->getId());
-        }
+        $qb->leftJoin('mr.employees', 'e')
+            ->andWhere('e.id = :userId OR mr.is_public = true')
+            ->setParameter('userId', $user->getId());
 
         $qb->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
 
         $data = $qb->getQuery()->getResult();
-
-        foreach ($data as $room) {
-            $room->setAccess(MeetingRoomAccessChecker::canAccess($room, $user));
-        }
 
         $countQb = clone $qb;
         $total = $countQb->select('COUNT(mr.id) as total')

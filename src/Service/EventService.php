@@ -78,6 +78,7 @@ class EventService implements EventServiceInterface
             throw new NotFoundHttpException('Author not found');
         }
 
+
         $event = (new Event())
             ->setName($dto->name)
             ->setDescription($dto->description)
@@ -87,6 +88,16 @@ class EventService implements EventServiceInterface
             ->setAuthor($author)
             ->setMeetingRoom($meetingRoom)
         ;
+
+        $timeZoneOffset = $meetingRoom->getOffice()->getTimeZone();
+
+        $timeStart = DateTime::createFromFormat('H:i:s', $dto->timeStart);
+        $timeStart->modify("-$timeZoneOffset hours");
+        $event->setTimeStart($timeStart);
+
+        $timeEnd = DateTime::createFromFormat('H:i:s', $dto->timeEnd);
+        $timeEnd->modify("-$timeZoneOffset hours");
+        $event->setTimeEnd($timeEnd);
 
         if (!$this->validateEvent($event->getMeetingRoom(), $event->getDate(), $event->getTimeStart(), $event->getTimeEnd())) {
             throw new BadRequestHttpException('Event data uncorrected');
