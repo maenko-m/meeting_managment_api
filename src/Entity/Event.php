@@ -52,15 +52,15 @@ class Event
     #[ORM\Column(type: 'string', nullable: true, enumType: RecurrenceType::class)]
     private ?RecurrenceType $recurrenceType = null;
 
-
     #[ORM\Column(nullable: true)]
     private ?int $recurrenceInterval = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $recurrenceEnd = null;
 
-    #[ORM\ManyToOne(targetEntity: self::class)]
-    private ?Event $parentEvent = null;
+    #[ORM\ManyToOne(targetEntity: Event::class)]
+    #[ORM\JoinColumn(name: "recurrence_parent_id", referencedColumnName: "id", nullable: true, onDelete: "CASCADE")]
+    private ?Event $recurrenceParent = null;
 
     public function __construct()
     {
@@ -109,17 +109,6 @@ class Event
         return $this;
     }
 
-    public function getParentEvent(): ?Event
-    {
-        return $this->parentEvent;
-    }
-
-    public function setParentEvent(?Event $parentEvent): static
-    {
-        $this->parentEvent = $parentEvent;
-
-        return $this;
-    }
     public function getEmployees(): Collection
     {
         return $this->employees;
@@ -242,5 +231,17 @@ class Event
     public function getMeetingRoomId(): int
     {
         return $this->meeting_room->getId();
+    }
+
+    public function getRecurrenceParent(): ?Event
+    {
+        return $this->recurrenceParent;
+    }
+
+    public function setRecurrenceParent(?Event $recurrenceParent): static
+    {
+        $this->recurrenceParent = $recurrenceParent;
+
+        return $this;
     }
 }

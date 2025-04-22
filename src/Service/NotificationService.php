@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Employee;
 use App\Entity\Event;
+use DateTime;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
 use Symfony\Component\Mailer\MailerInterface;
@@ -24,11 +25,10 @@ class NotificationService
 
     public function sendMeetingReminder(Employee $employee, Event $event, int $minutesBefore = 60): void
     {
-        $office = $event->getMeetingRoom()->getOffice();
-        $timeZoneOffset = $office->getTimeZone();
+        $timeZoneOffset = $event->getMeetingRoom()->getOffice()->getTimeZone();
 
-        $timeZoneString = $timeZoneOffset >= 0 ? "Etc/GMT-" . $timeZoneOffset : "Etc/GMT+" . abs($timeZoneOffset);
-        $timeZone = new \DateTimeZone($timeZoneString);
+        $timeStart = clone $event->getTimeStart();
+        $timeStart->modify("+$timeZoneOffset hours");
 
         $startTimeUtc = new \DateTime('now', new \DateTimeZone('UTC'));
         $startTimeUtc->setDate(
@@ -37,14 +37,12 @@ class NotificationService
             $event->getDate()->format('d')
         );
         $startTimeUtc->setTime(
-            $event->getTimeStart()->format('H'),
-            $event->getTimeStart()->format('i'),
-            $event->getTimeStart()->format('s')
+            $timeStart->format('H'),
+            $timeStart->format('i'),
+            $timeStart->format('s')
         );
 
         $startTimeLocal = clone $startTimeUtc;
-        $startTimeLocal->setTimezone($timeZone);
-
         $formattedTime = $startTimeLocal->format('H:i d.m.Y');
 
         $email = (new Email())
@@ -61,16 +59,15 @@ class NotificationService
 
         $this->mailer->send($email);
 
-        $this->sendPushNotification($employee, $event, "Событие '{$event->getName()}' начнётся через {$minutesBefore} минут.");
+        //$this->sendPushNotification($employee, $event, "Событие '{$event->getName()}' начнётся через {$minutesBefore} минут.");
     }
 
     public function sendMeetingSummary(Employee $employee, Event $event): void
     {
-        $office = $event->getMeetingRoom()->getOffice();
-        $timeZoneOffset = $office->getTimeZone();
+        $timeZoneOffset = $event->getMeetingRoom()->getOffice()->getTimeZone();
 
-        $timeZoneString = $timeZoneOffset >= 0 ? "Etc/GMT-" . $timeZoneOffset : "Etc/GMT+" . abs($timeZoneOffset);
-        $timeZone = new \DateTimeZone($timeZoneString);
+        $timeEnd = clone $event->getTimeEnd();
+        $timeEnd->modify("+$timeZoneOffset hours");
 
         $endTimeUtc = new \DateTime('now', new \DateTimeZone('UTC'));
         $endTimeUtc->setDate(
@@ -79,14 +76,12 @@ class NotificationService
             $event->getDate()->format('d')
         );
         $endTimeUtc->setTime(
-            $event->getTimeEnd()->format('H'),
-            $event->getTimeEnd()->format('i'),
-            $event->getTimeEnd()->format('s')
+            $timeEnd->format('H'),
+            $timeEnd->format('i'),
+            $timeEnd->format('s')
         );
 
         $endTimeLocal = clone $endTimeUtc;
-        $endTimeLocal->setTimezone($timeZone);
-
         $formattedTime = $endTimeLocal->format('H:i d.m.Y');
 
         $email = (new Email())

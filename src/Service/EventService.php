@@ -12,9 +12,11 @@ use App\Enum\Status;
 use App\Interface\EventServiceInterface;
 use App\Message\SendNotificationMessage;
 use App\Repository\EventRepository;
+use App\Service\NotificationSchedulerService;
 use DateInterval;
 use DatePeriod;
 use DateTime;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -28,12 +30,14 @@ class EventService implements EventServiceInterface
     private EntityManagerInterface $em;
     private EventRepository $eventRepository;
     private MessageBusInterface $bus;
+    private NotificationSchedulerService $notificationSchedulerService;
 
-    public function __construct(EntityManagerInterface $em, EventRepository $eventRepository, MessageBusInterface $bus)
+    public function __construct(EntityManagerInterface $em, EventRepository $eventRepository, MessageBusInterface $bus, NotificationSchedulerService $notificationSchedulerService)
     {
         $this->em = $em;
         $this->eventRepository = $eventRepository;
         $this->bus = $bus;
+        $this->notificationSchedulerService = $notificationSchedulerService;
     }
 
     public function getAllEvents(array $filters, ?UserInterface $user): array
@@ -45,10 +49,10 @@ class EventService implements EventServiceInterface
         $date = $filters['date'] ?? null;
         $isArchived = $filters['archived'] ?? null;
         $office_id = $filters['office_id'] ?? null;
-        $page = $filters['page'] ?? 1;
-        $limit = $filters['limit'] ?? 10;
+        //$page = $filters['page'] ?? 1;
+        //$limit = $filters['limit'] ?? 10;
 
-        return $this->eventRepository->getAllByFilter($room_id, $type, $name, $user, $descOrder, $isArchived, $date, $office_id, $page, $limit);
+        return $this->eventRepository->getAllByFilter($room_id, $type, $name, $user, $descOrder, $isArchived, $date, $office_id, /*$page, $limit*/);
     }
 
     public function getAllEventsByDate(DateTime $date): array
@@ -89,6 +93,15 @@ class EventService implements EventServiceInterface
             ->setMeetingRoom($meetingRoom)
         ;
 
+        if ($dto->recurrenceType && $dto->recurrenceInterval) {
+            $event->setRecurrenceType($dto->getRecurrenceTypeEnum());
+            $event->setRecurrenceInterval($dto->recurrenceInterval);
+        }
+
+        if ($dto->recurrenceEnd) {
+            $event->setRecurrenceEnd(DateTime::createFromFormat('Y-m-d', $dto->recurrenceEnd));
+        }
+
         $timeZoneOffset = $meetingRoom->getOffice()->getTimeZone();
 
         $timeStart = DateTime::createFromFormat('H:i:s', $dto->timeStart);
@@ -111,82 +124,10 @@ class EventService implements EventServiceInterface
         }
 
         $this->em->persist($event);
-
-        //повторы
-        if ($dto->recurrenceType && $dto->recurrenceInterval && $dto->recurrenceEnd) {
-            $recurrenceType = RecurrenceType::from($dto->recurrenceType);
-            $intervalCode = match ($recurrenceType) {
-                RecurrenceType::DAY => 'P' . $dto->recurrenceInterval . 'D',
-                RecurrenceType::WEEK => 'P' . $dto->recurrenceInterval . 'W',
-                RecurrenceType::MONTH => 'P' . $dto->recurrenceInterval . 'M',
-                RecurrenceType::YEAR => 'P' . $dto->recurrenceInterval . 'Y',
-            };
-
-            $event
-                ->setRecurrenceType($recurrenceType)
-                ->setRecurrenceInterval($dto->recurrenceInterval)
-                ->setRecurrenceEnd(new \DateTime($dto->recurrenceEnd));
-
-            $period = new DatePeriod(
-                $event->getDate(),
-                new DateInterval($intervalCode),
-                new \DateTime($dto->recurrenceEnd)
-            );
-
-            foreach ($period as $date) {
-                if ($date == $event->getDate()) continue; //пропустить оригинал
-
-                $recurringEvent = (new Event())
-                    ->setName($event->getName())
-                    ->setDescription($event->getDescription())
-                    ->setDate($date)
-                    ->setTimeStart(clone $event->getTimeStart())
-                    ->setTimeEnd(clone $event->getTimeEnd())
-                    ->setAuthor($event->getAuthor())
-                    ->setMeetingRoom($event->getMeetingRoom())
-                    ->setParentEvent($event)
-                    ->setRecurrenceType($recurrenceType)
-                    ->setRecurrenceInterval($dto->recurrenceInterval)
-                    ->setRecurrenceEnd(new \DateTime($dto->recurrenceEnd));
-
-                foreach ($event->getEmployees() as $employee) {
-                    $recurringEvent->addEmployee($employee);
-                }
-
-                $this->em->persist($recurringEvent);
-            }
-
-        }
-
         $this->em->flush();
 
         //уведомления
-        $startTimeUtc = (clone $event->getDate())->setTime(
-            (int)$event->getTimeStart()->format('H'),
-            (int)$event->getTimeStart()->format('i'),
-            (int)$event->getTimeStart()->format('s')
-        );
-        $endTimeUtc = (clone $event->getDate())->setTime(
-            (int)$event->getTimeEnd()->format('H'),
-            (int)$event->getTimeEnd()->format('i'),
-            (int)$event->getTimeEnd()->format('s')
-        );
-
-        $time60MinBefore = (clone $startTimeUtc)->modify('-60 minutes');
-        $time30MinBefore = (clone $startTimeUtc)->modify('-30 minutes');
-        $this->bus->dispatch(
-            new SendNotificationMessage($event->getId(), 'reminder', 60),
-            [new DelayStamp((int)(($time60MinBefore->getTimestamp() - time()) * 1000))]
-        );
-        $this->bus->dispatch(
-            new SendNotificationMessage($event->getId(), 'reminder', 30),
-            [new DelayStamp((int)(($time30MinBefore->getTimestamp() - time()) * 1000))]
-        );
-
-        $this->bus->dispatch(
-            new SendNotificationMessage($event->getId(), 'summary'),
-            [new DelayStamp((int)(($endTimeUtc->getTimestamp() - time()) * 1000))]
-        );
+        $this->notificationSchedulerService->scheduleNotifications($event);
 
         return $event;
     }
@@ -208,11 +149,18 @@ class EventService implements EventServiceInterface
         if ($dto->date) {
             $event->setDate(DateTime::createFromFormat('Y-m-d', $dto->date));
         }
+
+        $timeZoneOffset = $event->getMeetingRoom()->getOffice()->getTimeZone();
+
         if ($dto->timeStart) {
-            $event->setTimeStart(DateTime::createFromFormat('H:i:s', $dto->timeStart));
+            $timeStart = DateTime::createFromFormat('H:i:s', $dto->timeStart);
+            $timeStart->modify("-$timeZoneOffset hours");
+            $event->setTimeStart($timeStart);
         }
         if ($dto->timeEnd) {
-            $event->setTimeEnd(DateTime::createFromFormat('H:i:s', $dto->timeEnd));
+            $timeEnd = DateTime::createFromFormat('H:i:s', $dto->timeEnd);
+            $timeEnd->modify("-$timeZoneOffset hours");
+            $event->setTimeEnd($timeEnd);
         }
 
         if ($dto->authorId) {
@@ -238,7 +186,30 @@ class EventService implements EventServiceInterface
             throw new BadRequestHttpException('Event data uncorrected');
         }
 
+        $currentEmployees = $event->getEmployees();
+        $newEmployeeIds = $dto->employeeIds;
+
+        $currentEmployeeIds = $currentEmployees->map(fn(Employee $employee) => $employee->getId())->toArray();
+
+        foreach ($newEmployeeIds as $employeeId) {
+            if (!in_array($employeeId, $currentEmployeeIds)) {
+                $employee = $this->em->getRepository(Employee::class)->find($employeeId);
+                if ($employee) {
+                    $event->addEmployee($employee);
+                }
+            }
+        }
+
+        foreach ($currentEmployees as $employee) {
+            if (!in_array($employee->getId(), $newEmployeeIds)) {
+                $event->removeEmployee($employee);
+            }
+        }
+
         $this->em->flush();
+
+        //уведомления
+        $this->notificationSchedulerService->scheduleNotifications($event);
 
         return $event;
     }
@@ -250,6 +221,8 @@ class EventService implements EventServiceInterface
         if (!$event) {
             throw new NotFoundHttpException('Event not found');
         }
+
+        $this->notificationSchedulerService->clearEventQueue($event->getId());
 
         $this->em->remove($event);
         $this->em->flush();

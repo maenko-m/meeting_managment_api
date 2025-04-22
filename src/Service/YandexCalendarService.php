@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Sabre\DAV\Client;
 use Sabre\VObject\Component\VCalendar;
@@ -116,14 +117,43 @@ XML;
         $calendarId = $this->createCalendarForRoom($room);
         $calendarPath = "/calendars/{$this->yandexUsername}/{$calendarId}/";
 
+        $rrule = null;
+        $freq = null;
+
+        $freqMap = [
+            'day' => 'DAILY',
+            'week' => 'WEEKLY',
+            'month' => 'MONTHLY',
+            'year' => 'YEARLY',
+        ];
+
+        if ($event->getRecurrenceType()) {
+            $freq = $freqMap[$event->getRecurrenceType()->value] ?? null;
+        }
+
+        if ($freq && $event->getRecurrenceInterval()) {
+            $rruleParts = [
+                'FREQ=' . $freq,
+                'INTERVAL=' . (int) $event->getRecurrenceInterval(),
+            ];
+
+            if ($event->getRecurrenceEnd() instanceof \DateTimeInterface) {
+                $until = (clone $event->getRecurrenceEnd())->setTime(23, 59, 59);
+                $rruleParts[] = 'UNTIL=' . $until->format('Ymd\THis\Z');
+            }
+
+            $rrule = implode(';', $rruleParts);
+        }
+
         $vCalendar = new VCalendar();
+
         $vCalendar->add('VEVENT', [
-            'SUMMARY' => $event->getName(),
-            'DESCRIPTION' => $event->getDescription(),
-            'DTSTART' => $event->getDate()->format('Ymd') . 'T' . $event->getTimeStart()->format('His'),
-            'DTEND' => $event->getDate()->format('Ymd') . 'T' . $event->getTimeEnd()->format('His'),
-            'UID' => 'event_' . $event->getId(),
-        ]);
+                'SUMMARY' => $event->getName(),
+                'DESCRIPTION' => $event->getDescription(),
+                'DTSTART' => $event->getDate()->format('Ymd') . 'T' . $event->getTimeStart()->format('His') . 'Z',
+                'DTEND' => $event->getDate()->format('Ymd') . 'T' . $event->getTimeEnd()->format('His') . 'Z',
+                'UID' => 'event_' . $event->getId(),
+            ] + ($rrule ? ['RRULE' => $rrule] : []));
 
         $eventPath = $calendarPath . 'event_' . $event->getId() . '.ics';
 

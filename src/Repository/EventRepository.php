@@ -18,7 +18,7 @@ class EventRepository extends ServiceEntityRepository
         parent::__construct($registry, Event::class);
     }
 
-    public function getAllByFilter(?int $room_id = null, ?string $type = null, ?string $name = null, ?Employee $user = null, bool $descOrder = false, ?string $isArchive = null, ?string $date = null, ?int $office_id = null, int $page = 1, int $limit = 10): array
+    public function getAllByFilter(?int $room_id = null, ?string $type = null, ?string $name = null, ?Employee $user = null, bool $descOrder = false, ?string $isArchive = null, ?string $date = null, ?int $office_id = null, /*int $page = 1, int $limit = 10*/): array
     {
         $qb = $this->createQueryBuilder('e');
 
@@ -71,8 +71,8 @@ class EventRepository extends ServiceEntityRepository
             $qb->orderBy('e.date', 'ASC');
         }
 
-        $qb->setFirstResult(($page - 1) * $limit)
-            ->setMaxResults($limit);
+        /*$qb->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);*/
 
         $data = $qb->getQuery()->getResult();
 
@@ -114,13 +114,9 @@ class EventRepository extends ServiceEntityRepository
             'data' => $data,
             'meta' => [
                 'total' => (int) $total,
-                'page' => $page,
-                'limit' => $limit,
-                'totalPages' => (int) ceil($total / $limit)
-            ],
-            'counts' => [
-                'author' => (int) $countForAuthor,
-                'member' => (int) $countForMember
+                'page' => 1,
+                'limit' => 0,
+                'totalPages' => (int) ceil($total / 1)
             ]
         ];
     }
