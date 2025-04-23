@@ -8,7 +8,7 @@ use App\Entity\Employee;
 
 interface EmployeeServiceInterface
 {
-    public function getAllEmployees(): array;
+    public function getAllEmployees(?Employee $user = null): array;
     public function getEmployeeById(int $id): ?Employee;
     public function createEmployee(EmployeeCreateDTO $employeeCreateDTO): Employee;
     public function updateEmployee(int $id, EmployeeUpdateDTO $employeeUpdateDTO): Employee;

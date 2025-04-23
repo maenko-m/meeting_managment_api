@@ -10,6 +10,7 @@ use App\Interface\EmployeeServiceInterface;
 use Nelmio\ApiDocBundle\Attribute\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -71,7 +72,9 @@ final class EmployeeController extends AbstractController
     #[Route(name: 'api_employee_get_all', methods: ['GET'], format: 'json')]
     public function getAll(): JsonResponse
     {
-        $employees = $this->employeeService->getAllEmployees();
+        $user = $this->getUser();
+
+        $employees = $this->employeeService->getAllEmployees($user);
 
         return $this->json($employees, Response::HTTP_OK);
     }

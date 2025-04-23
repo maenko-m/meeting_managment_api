@@ -4,6 +4,9 @@ namespace App\Entity;
 
 use App\Enum\Status;
 use App\Repository\MeetingRoomRepository;
+use DateInterval;
+use DateTime;
+use DateTimeZone;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -248,5 +251,47 @@ class MeetingRoom
     {
         $this->access = $access;
         return $this;
+    }
+
+    public function isOccupied(): bool
+    {
+        $now = new DateTime('now', new DateTimeZone('UTC')); // Текущее время в UTC
+        $localNow = clone $now;
+
+        // Применяем смещение timeZone (в часах)
+        $offsetHours = $this->getOffice()->getTimeZone();
+        $interval = new DateInterval(sprintf('PT%dH', abs($offsetHours)));
+        if ($offsetHours >= 0) {
+            $localNow->add($interval); // Добавляем часы для положительного смещения
+        } else {
+            $localNow->sub($interval); // Вычитаем часы для отрицательного смещения
+        }
+
+        foreach ($this->events as $event) {
+            $start = $event->getStartDateTime();
+            $end = $event->getEndDateTime();
+
+            if (!$start || !$end) {
+                continue;
+            }
+
+            // Преобразуем время события в локальное время с учетом смещения
+            $startLocal = clone $start;
+            $endLocal = clone $end;
+
+            if ($offsetHours >= 0) {
+                $startLocal->add($interval);
+                $endLocal->add($interval);
+            } else {
+                $startLocal->sub($interval);
+                $endLocal->sub($interval);
+            }
+
+            if ($localNow >= $startLocal && $localNow <= $endLocal) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

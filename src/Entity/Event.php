@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\EventRepository;
+use DateTime;
+use DateTimeZone;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
@@ -243,5 +245,33 @@ class Event
         $this->recurrenceParent = $recurrenceParent;
 
         return $this;
+    }
+
+    #[Ignore]
+    public function getStartDateTime(): ?DateTime
+    {
+        if (!$this->date || !$this->time_start) {
+            return null;
+        }
+
+        $start = new DateTime(
+            $this->date->format('Y-m-d') . ' ' . $this->time_start->format('H:i:s'),
+            new DateTimeZone('UTC')
+        );
+        return $start;
+    }
+
+    #[Ignore]
+    public function getEndDateTime(): ?DateTime
+    {
+        if (!$this->date || !$this->time_end) {
+            return null;
+        }
+
+        $end = new DateTime(
+            $this->date->format('Y-m-d') . ' ' . $this->time_end->format('H:i:s'),
+            new DateTimeZone('UTC')
+        );
+        return $end;
     }
 }

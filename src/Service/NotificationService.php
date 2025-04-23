@@ -59,7 +59,7 @@ class NotificationService
 
         $this->mailer->send($email);
 
-        //$this->sendPushNotification($employee, $event, "Событие '{$event->getName()}' начнётся через {$minutesBefore} минут.");
+        $this->sendPushNotification($employee, $event, "Событие '{$event->getName()}' начнётся через {$minutesBefore} минут.");
     }
 
     public function sendMeetingSummary(Employee $employee, Event $event): void

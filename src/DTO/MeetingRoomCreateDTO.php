@@ -23,9 +23,9 @@ readonly class MeetingRoomCreateDTO
         public ?int $calendarCode,
 
         #[Assert\All([
-            new Assert\File(
-                maxSize: '5M',
-                mimeTypes: ['image/jpeg', 'image/png', 'image/webp']
+            new Assert\Regex(
+                pattern: '/\.(jpe?g|png|webp)$/i',
+                message: 'Допустимые форматы: jpg, jpeg, png, webp.'
             )
         ])]
         public array $photos = [],

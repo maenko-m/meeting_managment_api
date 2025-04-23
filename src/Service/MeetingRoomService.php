@@ -53,15 +53,7 @@ class MeetingRoomService implements MeetingRoomServiceInterface
             throw new NotFoundHttpException('Office not found');
         }
 
-        $photoPaths = [];
-
-        foreach ($dto->photos as $photo) {
-            if ($photo instanceof UploadedFile) {
-                $newFilename = uniqid('photo_').'.'.$photo->guessExtension();
-                $photo->move($this->uploadDir, $newFilename);
-                $photoPaths[] = '/uploads/meeting_rooms/' . $newFilename;
-            }
-        }
+        $photoPaths = $this->movePhotos($dto->photos);
 
         $meetingRoom = (new MeetingRoom())
             ->setName($dto->name)
@@ -142,15 +134,8 @@ class MeetingRoomService implements MeetingRoomServiceInterface
         if ($dto->photos) {
             $meetingRoom->clearPhotoPaths();
 
-            $photoPaths = [];
+            $photoPaths = $this->movePhotos($dto->photos);
 
-            foreach ($dto->photos as $photo) {
-                if ($photo instanceof UploadedFile) {
-                    $newFilename = uniqid('photo_').'.'.$photo->guessExtension();
-                    $photo->move($this->uploadDir, $newFilename);
-                    $photoPaths[] = '/uploads/meeting_rooms/' . $newFilename;
-                }
-            }
             $meetingRoom->setPhotoPaths($photoPaths);
         }
 
@@ -169,5 +154,32 @@ class MeetingRoomService implements MeetingRoomServiceInterface
 
         $this->em->remove($meetingRoom);
         $this->em->flush();
+    }
+
+    private function movePhotos(array $photoPaths): array
+    {
+        $resultPaths = [];
+
+        foreach ($photoPaths as $path) {
+            if (is_string($path) && preg_match('/\.(jpe?g|png|webp)$/i', $path)) {
+                $originalPath = $path;
+
+                if (!file_exists($originalPath)) {
+                    throw new \InvalidArgumentException("Файл не найден: $originalPath");
+                }
+
+                $extension = pathinfo($originalPath, PATHINFO_EXTENSION);
+                $newFilename = uniqid('photo_') . '.' . $extension;
+                $destinationPath = $this->uploadDir . '/' . $newFilename;
+
+                if (!@rename($originalPath, $destinationPath)) {
+                    throw new \RuntimeException("Не удалось переместить файл: $originalPath");
+                }
+
+                $resultPaths[] = '/uploads/meeting_rooms/' . $newFilename;
+            }
+        }
+
+        return $resultPaths;
     }
 }

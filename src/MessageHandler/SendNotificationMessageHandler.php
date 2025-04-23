@@ -31,7 +31,7 @@ class SendNotificationMessageHandler
 
         foreach ($event->getEmployees() as $employee) {
             if ($message->type === 'reminder') {
-                $this->notificationService->sendMeetingReminder($employee, $event, 60);
+                $this->notificationService->sendMeetingReminder($employee, $event, $message->minutesBefore);
             } elseif ($message->type === 'summary') {
                 $this->notificationService->sendMeetingSummary($employee, $event);
 

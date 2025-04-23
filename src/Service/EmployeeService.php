@@ -10,6 +10,7 @@ use App\Interface\EmployeeServiceInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 class EmployeeService implements EmployeeServiceInterface
 {
@@ -22,9 +23,15 @@ class EmployeeService implements EmployeeServiceInterface
         $this->passwordHasher = $passwordHasher;
     }
 
-    public function getAllEmployees(): array
+    public function getAllEmployees(?Employee $user = null): array
     {
-        return $this->em->getRepository(Employee::class)->findAll();
+        $organization = $user->getOrganization();
+
+        $organizationId = $organization->getId();
+
+        return $this->em->getRepository(Employee::class)->findBy([
+            'organization' => $organizationId
+        ]);
     }
 
     public function getEmployeeById(int $id): ?Employee

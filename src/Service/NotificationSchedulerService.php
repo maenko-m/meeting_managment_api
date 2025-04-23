@@ -57,6 +57,14 @@ class NotificationSchedulerService
                 [new DelayStamp(($reminderTimestamp - $now) * 1000)] // Задержка в миллисекундах
             );
         }
+// Отправка напоминания за 10 минут до начала
+        $reminderTimestamp = $start->getTimestamp() - 10 * 60; // 60 минут до начала
+        if ($reminderTimestamp > $now) {
+            $this->bus->dispatch(
+                new SendNotificationMessage($event->getId(), 'reminder', 10),
+                [new DelayStamp(($reminderTimestamp - $now) * 1000)] // Задержка в миллисекундах
+            );
+        }
 
 // Отправка уведомления после окончания
         $summaryTimestamp = $end->getTimestamp(); // Время окончания события
@@ -68,7 +76,7 @@ class NotificationSchedulerService
         }
     }
 
-    private function clearEventQueue(int $eventId): void
+    public function clearEventQueue(int $eventId): void
     {
         $this->connection->executeStatement(
             'DELETE FROM messenger_messages WHERE body LIKE :pattern',
