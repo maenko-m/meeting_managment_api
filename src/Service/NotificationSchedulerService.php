@@ -53,12 +53,12 @@ class NotificationSchedulerService
         $reminderTimestamp = $start->getTimestamp() - 60 * 60; // 60 минут до начала
         if ($reminderTimestamp > $now) {
             $this->bus->dispatch(
-                new SendNotificationMessage($event->getId(), 'reminder'),
+                new SendNotificationMessage($event->getId(), 'reminder', 60),
                 [new DelayStamp(($reminderTimestamp - $now) * 1000)] // Задержка в миллисекундах
             );
         }
 // Отправка напоминания за 10 минут до начала
-        $reminderTimestamp = $start->getTimestamp() - 10 * 60; // 60 минут до начала
+        $reminderTimestamp = $start->getTimestamp() - 10 * 60; //10 минут до начала
         if ($reminderTimestamp > $now) {
             $this->bus->dispatch(
                 new SendNotificationMessage($event->getId(), 'reminder', 10),

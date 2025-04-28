@@ -28,6 +28,14 @@ class PushSubscriptionController extends AbstractController
             return $this->json(['error' => 'User not authenticated'], 401);
         }
 
+        $existing = $employee->getPushSubscriptions()->filter(function (PushSubscription $sub) use ($data) {
+            return $sub->getEndpoint() === $data['endpoint'];
+        })->first();
+
+        if ($existing) {
+            return $this->json(['status' => 'Already subscribed']);
+        }
+
         $subscription = new PushSubscription();
         $subscription->setEndpoint($data['endpoint']);
         $subscription->setAuthToken($data['keys']['auth']);
@@ -37,5 +45,29 @@ class PushSubscriptionController extends AbstractController
         $em->flush();
 
         return $this->json(['status' => 'Subscribed']);
+    }
+
+    #[Route('/api/push-unsubscribe', methods: ['POST'], format: 'json')]
+    public function unsubscribe(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+        if (!$data || !isset($data['endpoint'])) {
+            return $this->json(['error' => 'Invalid unsubscription data'], 400);
+        }
+
+        $employee = $this->getUser();
+        if (!$employee instanceof Employee) {
+            return $this->json(['error' => 'User not authenticated'], 401);
+        }
+
+        foreach ($employee->getPushSubscriptions() as $sub) {
+            if ($sub->getEndpoint() === $data['endpoint']) {
+                $em->remove($sub);
+                break;
+            }
+        }
+
+        $em->flush();
+        return $this->json(['status' => 'Unsubscribed']);
     }
 }
